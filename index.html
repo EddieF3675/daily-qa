@@ -1,0 +1,1099 @@
+<title>日常提問板</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+
+<style>
+/* ─── Design tokens ─────────────────────────────────────────────────────────
+   Layout: sidebar-left + scrollable main feed + right AI chat drawer
+   Color:  deep navy sidebar, cool slate canvas, sky-blue accent, violet AI tones
+   Type:   Sora for headings / UI labels, Noto Sans TC for body / Chinese
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:          #f0f3f8;
+  --surface:     #ffffff;
+  --surface-2:   #f7f9fc;
+  --sidebar:     #151f2e;
+  --sidebar-fg:  #cdd8ea;
+  --sidebar-muted: #6b80a0;
+  --fg:          #1a2233;
+  --fg-2:        #4a5568;
+  --fg-muted:    #8898aa;
+  --accent:      #2f7ef5;
+  --accent-light:#ebf3ff;
+  --border:      #dde4ef;
+  --border-strong:#bec9db;
+  --pending:     #f59e0b;
+  --learning:    #8b5cf6;
+  --resolved:    #10b981;
+  --pending-bg:  #fffbeb;
+  --learning-bg: #f5f3ff;
+  --resolved-bg: #ecfdf5;
+  --ai-bg:       #f0ebff;
+  --ai-fg:       #5b21b6;
+  --ai-border:   #ddd6fe;
+  --ai-surface:  #faf8ff;
+  --ai-msg-bg:   #ede9fe;
+  --tag-1: #dbeafe; --tag-1-fg: #1d4ed8;
+  --tag-2: #fce7f3; --tag-2-fg: #9d174d;
+  --tag-3: #d1fae5; --tag-3-fg: #065f46;
+  --tag-4: #e0e7ff; --tag-4-fg: #3730a3;
+  --shadow: 0 1px 3px rgba(20,35,60,.08), 0 1px 2px rgba(20,35,60,.05);
+  --shadow-md: 0 4px 12px rgba(20,35,60,.1), 0 2px 4px rgba(20,35,60,.06);
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:          #0d1522;
+    --surface:     #152033;
+    --surface-2:   #1a2840;
+    --sidebar:     #080f1a;
+    --sidebar-fg:  #b8cce0;
+    --sidebar-muted: #4d6280;
+    --fg:          #dde6f0;
+    --fg-2:        #8ba4be;
+    --fg-muted:    #4d6280;
+    --accent:      #4d91f7;
+    --accent-light:#0f2240;
+    --border:      #1e3050;
+    --border-strong:#2a4068;
+    --pending:     #f59e0b;
+    --learning:    #a78bfa;
+    --resolved:    #34d399;
+    --pending-bg:  #1c1a0a;
+    --learning-bg: #1a1530;
+    --resolved-bg: #0a1e18;
+    --ai-bg:       #1e1640;
+    --ai-fg:       #c4b5fd;
+    --ai-border:   #3b2d6a;
+    --ai-surface:  #16102e;
+    --ai-msg-bg:   #2d1f5e;
+    --tag-1: #1e3060; --tag-1-fg: #93c5fd;
+    --tag-2: #3d1030; --tag-2-fg: #f9a8d4;
+    --tag-3: #0a2818; --tag-3-fg: #6ee7b7;
+    --tag-4: #1a1870; --tag-4-fg: #a5b4fc;
+    --shadow: 0 1px 3px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:          #0d1522;
+  --surface:     #152033;
+  --surface-2:   #1a2840;
+  --sidebar:     #080f1a;
+  --sidebar-fg:  #b8cce0;
+  --sidebar-muted: #4d6280;
+  --fg:          #dde6f0;
+  --fg-2:        #8ba4be;
+  --fg-muted:    #4d6280;
+  --accent:      #4d91f7;
+  --accent-light:#0f2240;
+  --border:      #1e3050;
+  --border-strong:#2a4068;
+  --pending:     #f59e0b;
+  --learning:    #a78bfa;
+  --resolved:    #34d399;
+  --pending-bg:  #1c1a0a;
+  --learning-bg: #1a1530;
+  --resolved-bg: #0a1e18;
+  --ai-bg:       #1e1640;
+  --ai-fg:       #c4b5fd;
+  --ai-border:   #3b2d6a;
+  --ai-surface:  #16102e;
+  --ai-msg-bg:   #2d1f5e;
+  --tag-1: #1e3060; --tag-1-fg: #93c5fd;
+  --tag-2: #3d1030; --tag-2-fg: #f9a8d4;
+  --tag-3: #0a2818; --tag-3-fg: #6ee7b7;
+  --tag-4: #1a1870; --tag-4-fg: #a5b4fc;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans TC', 'Sora', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100%;
+  display: flex;
+  gap: 0;
+  padding: 0;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  height: 100dvh;
+  overflow-y: auto;
+}
+.sidebar-brand { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.sidebar-brand h1 { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; margin-bottom: 2px; }
+.sidebar-brand p { font-size: 11px; color: var(--sidebar-muted); letter-spacing: .3px; }
+.sidebar-section { padding: 16px 12px 8px; }
+.sidebar-label { font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 600; color: var(--sidebar-muted); letter-spacing: 1px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+.sidebar-nav { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav li a { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; color: var(--sidebar-fg); text-decoration: none; font-size: 13px; font-weight: 500; transition: background .15s, color .15s; cursor: pointer; }
+.sidebar-nav li a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.sidebar-nav li.active a { background: var(--accent); color: #fff; }
+.nav-count { margin-left: auto; font-size: 10px; font-family: 'Sora', sans-serif; background: rgba(255,255,255,.12); color: var(--sidebar-fg); border-radius: 20px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.sidebar-nav li.active .nav-count { background: rgba(255,255,255,.25); color: #fff; }
+.sidebar-stats { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.06); display: flex; gap: 14px; }
+.stat-mini { text-align: center; flex: 1; }
+.stat-mini .num { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #fff; display: block; font-variant-numeric: tabular-nums; }
+.stat-mini .lbl { font-size: 10px; color: var(--sidebar-muted); }
+
+/* ─── Main ───────────────────────────────────────────────────────────────── */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; max-width: 800px; padding: 0 0 40px; }
+.main-header { padding: 28px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.main-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: -.5px; text-wrap: balance; }
+.main-sub { font-size: 13px; color: var(--fg-muted); margin-top: 3px; }
+
+.btn { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: opacity .15s, transform .1s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: .9; }
+.btn-ghost { background: var(--surface); color: var(--fg-2); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--border-strong); color: var(--fg); }
+.btn-ai { background: var(--ai-bg); color: var(--ai-fg); border: 1px solid var(--ai-border); }
+.btn-ai:hover { opacity: .85; }
+.btn-sm { font-size: 12px; padding: 5px 10px; }
+
+/* ─── New question form ──────────────────────────────────────────────────── */
+.form-panel { margin: 20px 28px 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); overflow: hidden; }
+.form-panel[hidden] { display: none !important; }
+.form-header { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.form-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; color: var(--fg); }
+.form-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+
+label.field-label { font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; color: var(--fg-2); letter-spacing: .3px; display: block; margin-bottom: 5px; }
+input[type="text"], textarea, select { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; font-family: 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; color: var(--fg); outline: none; transition: border-color .15s, box-shadow .15s; resize: none; }
+input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+textarea { min-height: 80px; }
+.field-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.field-row > * { flex: 1; min-width: 0; }
+.form-footer { padding: 12px 18px; background: var(--surface-2); border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ─── Filter bar ─────────────────────────────────────────────────────────── */
+.filter-bar { padding: 16px 28px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filter-btn { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 12px; background: var(--surface); color: var(--fg-2); cursor: pointer; transition: all .15s; }
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sort-sel { margin-left: auto; font-family: 'Sora', sans-serif; font-size: 12px; color: var(--fg-muted); border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; background: var(--surface); cursor: pointer; outline: none; width: auto; }
+
+/* ─── Question feed ──────────────────────────────────────────────────────── */
+.feed { padding: 16px 28px 0; display: flex; flex-direction: column; gap: 12px; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--fg-muted); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+.empty-state h3 { font-family: 'Sora', sans-serif; font-size: 15px; color: var(--fg-2); margin-bottom: 6px; }
+
+/* ─── Card ───────────────────────────────────────────────────────────────── */
+.qcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow .15s; }
+.qcard:hover { box-shadow: var(--shadow-md); }
+.qcard-top { padding: 14px 16px 10px; }
+.qcard-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.status-dot { display: inline-flex; align-items: center; gap: 5px; font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 9px; letter-spacing: .3px; }
+.status-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-pending  { color: var(--pending); background: var(--pending-bg); }
+.status-learning { color: var(--learning); background: var(--learning-bg); }
+.status-resolved { color: var(--resolved); background: var(--resolved-bg); }
+.tag { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 8px; letter-spacing: .2px; }
+.tag-work    { background: var(--tag-1); color: var(--tag-1-fg); }
+.tag-tech    { background: var(--tag-2); color: var(--tag-2-fg); }
+.tag-life    { background: var(--tag-3); color: var(--tag-3-fg); }
+.tag-other   { background: var(--tag-4); color: var(--tag-4-fg); }
+.card-date { font-size: 11px; color: var(--fg-muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.qcard-question { font-size: 15px; font-weight: 700; color: var(--fg); line-height: 1.45; margin-bottom: 6px; font-family: 'Sora', sans-serif; text-wrap: balance; }
+.qcard-desc { font-size: 13.5px; color: var(--fg-2); line-height: 1.65; }
+.qcard-actions { padding: 8px 16px; border-top: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.action-link { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; color: var(--fg-muted); background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 5px; transition: background .12s, color .12s; display: flex; align-items: center; gap: 5px; }
+.action-link:hover { background: var(--border); color: var(--fg); }
+.action-link.accent { color: var(--accent); }
+.action-link.accent:hover { background: var(--accent-light); }
+.action-link.ai-link { color: var(--ai-fg); }
+.action-link.ai-link:hover { background: var(--ai-bg); }
+
+/* ─── Replies ────────────────────────────────────────────────────────────── */
+.replies { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.reply { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; position: relative; }
+.reply.reply-ai { background: var(--ai-bg); border-color: var(--ai-border); }
+.reply-author { font-size: 11px; font-weight: 600; color: var(--accent); font-family: 'Sora', sans-serif; margin-bottom: 4px; }
+.reply.reply-ai .reply-author { color: var(--ai-fg); }
+.reply-text { font-size: 13.5px; color: var(--fg); line-height: 1.6; white-space: pre-wrap; }
+.reply-del { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--fg-muted); cursor: pointer; font-size: 12px; padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity .15s, background .12s; }
+.reply:hover .reply-del { opacity: 1; }
+.reply-del:hover { background: var(--border); color: var(--fg); }
+.reply-form { margin: 0 16px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.reply-form[hidden] { display: none !important; }
+.reply-input { flex: 1; min-width: 180px; font-size: 13.5px; padding: 8px 11px; min-height: 60px; }
+
+/* ─── AI Chat Drawer ─────────────────────────────────────────────────────── */
+.chat-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+.chat-overlay.open { display: block; }
+
+.chat-drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(480px, 100vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 32px rgba(0,0,0,.15);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .25s cubic-bezier(.25,.46,.45,.94);
+}
+.chat-drawer.open { transform: translateX(0); }
+
+.chat-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--ai-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.chat-header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chat-ai-label {
+  font-family: 'Sora', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--ai-fg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ai-fg); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.chat-q-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.chat-close { background: none; border: none; cursor: pointer; color: var(--fg-muted); font-size: 18px; padding: 2px 6px; border-radius: 5px; transition: background .12s; flex-shrink: 0; }
+.chat-close:hover { background: var(--border); color: var(--fg); }
+
+.chat-msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--ai-surface);
+  scroll-behavior: smooth;
+}
+.chat-welcome {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--fg-muted);
+}
+.chat-welcome .wi { font-size: 32px; margin-bottom: 10px; display: block; }
+.chat-welcome p { font-size: 13px; line-height: 1.6; }
+
+.msg { display: flex; flex-direction: column; gap: 4px; max-width: 90%; }
+.msg-user { align-self: flex-end; align-items: flex-end; }
+.msg-ai   { align-self: flex-start; align-items: flex-start; }
+.msg-role { font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: .5px; color: var(--fg-muted); }
+.msg-user .msg-role { color: var(--accent); }
+.msg-ai   .msg-role { color: var(--ai-fg); }
+.msg-bubble {
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg-ai   .msg-bubble { background: var(--ai-msg-bg); color: var(--fg); border-bottom-left-radius: 4px; }
+.msg-thinking { color: var(--ai-fg); font-style: italic; font-size: 13px; opacity: .7; padding: 6px 13px; }
+.msg-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.save-btn {
+  font-family: 'Sora', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--resolved-bg);
+  color: var(--resolved);
+  border: 1px solid var(--resolved);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: opacity .12s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.save-btn:hover { opacity: .8; }
+.save-btn.saved { background: var(--resolved); color: #fff; pointer-events: none; }
+
+.chat-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.chat-unavail { text-align: center; padding: 10px; font-size: 12px; color: var(--fg-muted); }
+.chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  padding: 9px 12px;
+  min-height: 44px;
+  max-height: 120px;
+  resize: none;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+  outline: none;
+  transition: border-color .15s;
+}
+.chat-input:focus { border-color: var(--ai-fg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-fg) 12%, transparent); }
+.chat-send-btn {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: var(--ai-fg);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .12s, transform .1s;
+}
+.chat-send-btn:hover { opacity: .85; }
+.chat-send-btn:active { transform: scale(.95); }
+.chat-send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.chat-stop-btn {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+.chat-stop-btn:hover { background: var(--border); color: var(--fg); }
+.chat-hint { font-size: 11px; color: var(--fg-muted); text-align: center; }
+
+/* ─── Settings Modal ─────────────────────────────────────────────────────── */
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+}
+.settings-overlay.open { display: flex; }
+.settings-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.settings-modal h3 {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-desc {
+  font-size: 13px;
+  color: var(--fg-2);
+  line-height: 1.65;
+}
+.settings-desc a { color: var(--accent); text-decoration: none; }
+.settings-desc a:hover { text-decoration: underline; }
+.settings-key-row {
+  display: flex;
+  gap: 8px;
+}
+.settings-key-row input {
+  flex: 1;
+  font-family: 'Sora', monospace, sans-serif;
+  font-size: 13px;
+  letter-spacing: .3px;
+}
+.settings-status {
+  font-size: 12px;
+  color: var(--resolved);
+  min-height: 16px;
+}
+.settings-status.err { color: #ef4444; }
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.chat-gear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ai-fg);
+  font-size: 15px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  transition: background .12s;
+  opacity: .7;
+}
+.chat-gear-btn:hover { background: rgba(0,0,0,.08); opacity: 1; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; }
+  .sidebar-brand { padding: 12px 16px; }
+  .sidebar-section { padding: 8px 12px; }
+  .sidebar-stats { padding: 10px 16px; }
+  .main-header, .filter-bar, .feed { padding-left: 16px; padding-right: 16px; }
+  .form-panel { margin-left: 16px; margin-right: 16px; }
+  .chat-drawer { width: 100vw; top: auto; height: 90dvh; transform: translateY(100%); border-left: none; border-top: 1px solid var(--border); border-radius: 16px 16px 0 0; }
+  .chat-drawer.open { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <h1>💬 提問討論區</h1>
+    <p>日常疑問 · 學習筆記</p>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">分類</div>
+    <ul class="sidebar-nav" id="cat-nav">
+      <li class="active" data-cat="all"><a href="#"><span>📋</span> 全部 <span class="nav-count" id="cnt-all">0</span></a></li>
+      <li data-cat="work"><a href="#"><span>🏭</span> 工作/製程 <span class="nav-count" id="cnt-work">0</span></a></li>
+      <li data-cat="tech"><a href="#"><span>💻</span> 技術/3C <span class="nav-count" id="cnt-tech">0</span></a></li>
+      <li data-cat="life"><a href="#"><span>🌿</span> 日常生活 <span class="nav-count" id="cnt-life">0</span></a></li>
+      <li data-cat="other"><a href="#"><span>🔖</span> 其他 <span class="nav-count" id="cnt-other">0</span></a></li>
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">狀態</div>
+    <ul class="sidebar-nav" id="status-nav">
+      <li data-status="pending"><a href="#"><span>🟡</span> 待解決 <span class="nav-count" id="cnt-pending">0</span></a></li>
+      <li data-status="learning"><a href="#"><span>🟣</span> 學習中 <span class="nav-count" id="cnt-learning">0</span></a></li>
+      <li data-status="resolved"><a href="#"><span>🟢</span> 已解決 <span class="nav-count" id="cnt-resolved">0</span></a></li>
+    </ul>
+  </div>
+  <div class="sidebar-stats">
+    <div class="stat-mini"><span class="num" id="stat-total">0</span><span class="lbl">總問題</span></div>
+    <div class="stat-mini"><span class="num" id="stat-resolved">0</span><span class="lbl">已解決</span></div>
+    <div class="stat-mini"><span class="num" id="stat-rate">0%</span><span class="lbl">解決率</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-header">
+    <div>
+      <div class="main-title" id="view-title">全部問題</div>
+      <div class="main-sub">記錄日常遇到的疑問，持續學習成長</div>
+    </div>
+    <button class="btn btn-primary" onclick="toggleForm()">＋ 新增問題</button>
+  </div>
+
+  <div class="form-panel" id="form-panel" hidden>
+    <div class="form-header">
+      <span class="form-title">📝 記錄新問題</span>
+      <button class="btn btn-ghost btn-sm" onclick="toggleForm()">取消</button>
+    </div>
+    <div class="form-body">
+      <div>
+        <label class="field-label" for="q-title">問題標題 *</label>
+        <input type="text" id="q-title" placeholder="這個問題是什麼？盡量具體…">
+      </div>
+      <div>
+        <label class="field-label" for="q-desc">詳細說明（選填）</label>
+        <textarea id="q-desc" placeholder="背景情境、遇到的現象、已嘗試的方法…"></textarea>
+      </div>
+      <div class="field-row">
+        <div>
+          <label class="field-label" for="q-cat">分類</label>
+          <select id="q-cat">
+            <option value="work">🏭 工作/製程</option>
+            <option value="tech">💻 技術/3C</option>
+            <option value="life">🌿 日常生活</option>
+            <option value="other">🔖 其他</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="q-status">狀態</label>
+          <select id="q-status">
+            <option value="pending">🟡 待解決</option>
+            <option value="learning">🟣 學習中</option>
+            <option value="resolved">🟢 已解決</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn btn-primary" onclick="submitQuestion()">提交問題</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+    <button class="filter-btn" onclick="setFilter('pending',this)">待解決</button>
+    <button class="filter-btn" onclick="setFilter('learning',this)">學習中</button>
+    <button class="filter-btn" onclick="setFilter('resolved',this)">已解決</button>
+    <select class="sort-sel" id="sort-sel" onchange="render()">
+      <option value="new">最新優先</option>
+      <option value="old">最舊優先</option>
+      <option value="status">依狀態排序</option>
+    </select>
+  </div>
+
+  <div class="feed" id="feed"></div>
+</div>
+
+<!-- ── AI Chat Drawer ─────────────────────────────────────────────────── -->
+<div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
+<div class="chat-drawer" id="chat-drawer">
+  <div class="chat-header">
+    <div class="chat-header-top">
+      <div class="chat-ai-label"><span class="ai-dot"></span> Gemini AI 助手</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="chat-gear-btn" onclick="openSettings()" title="設定 API Key">⚙️</button>
+        <button class="chat-close" onclick="closeChat()" title="關閉">✕</button>
+      </div>
+    </div>
+    <div class="chat-q-title" id="chat-q-title">—</div>
+  </div>
+  <div class="chat-msgs" id="chat-msgs">
+    <div class="chat-welcome">
+      <span class="wi">🤖</span>
+      <p>針對這個問題，你可以問我任何問題。<br>有了滿意的答案後，點「存為結論」就會自動記錄起來。</p>
+    </div>
+  </div>
+  <div class="chat-footer">
+    <div class="chat-unavail" id="chat-unavail" hidden>尚未設定 Gemini API Key，請點右上角 ⚙️ 進行設定。</div>
+    <div class="chat-input-row" id="chat-input-row">
+      <textarea class="chat-input" id="chat-input" placeholder="輸入你的問題… (Enter 送出，Shift+Enter 換行)" rows="1"></textarea>
+      <button class="chat-send-btn" id="chat-send" title="送出" onclick="sendChat()">↑</button>
+      <button class="chat-stop-btn" id="chat-stop" title="停止" onclick="stopChat()" hidden>■</button>
+    </div>
+    <div class="chat-hint" id="chat-hint">由 Gemini 2.0 Flash 驅動・對話不離開本頁</div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ────────────────────────────────────────────────────── -->
+<div class="settings-overlay" id="settings-overlay" onclick="e=>e.target===this&&closeSettings()">
+  <div class="settings-modal" onclick="event.stopPropagation()">
+    <h3>⚙️ Gemini API 設定</h3>
+    <p class="settings-desc">
+      前往 <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
+      取得免費 API Key，貼入下方即可啟用 AI 助手。<br>
+      Key 僅儲存在您的瀏覽器本機，不會上傳到任何伺服器。
+    </p>
+    <div>
+      <label class="field-label" for="gemini-key-input">Gemini API Key</label>
+      <div class="settings-key-row">
+        <input type="password" id="gemini-key-input" placeholder="AIza…" autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary btn-sm" onclick="saveApiKey()">儲存</button>
+      </div>
+    </div>
+    <div class="settings-status" id="settings-status"></div>
+    <div class="settings-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeSettings()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data & State ──────────────────────────────────────────────────────────
+let questions = [];
+let filterCat = 'all', filterStatus = 'all', filterBar = 'all';
+const STORAGE_KEY = 'daily_qa_v1';
+const CAT_LABELS = { work:'工作/製程', tech:'技術/3C', life:'日常生活', other:'其他' };
+const CAT_ICONS  = { work:'🏭', tech:'💻', life:'🌿', other:'🔖' };
+const STATUS_LABELS = { pending:'待解決', learning:'學習中', resolved:'已解決' };
+
+function load() { try { const r = localStorage.getItem(STORAGE_KEY); if (r) questions = JSON.parse(r); } catch(e) { questions = []; } }
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(questions)); } catch(e) {} }
+function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(ts) {
+  const d = new Date(ts), now = new Date(), diff = now - d;
+  if (diff < 60000) return '剛才';
+  if (diff < 3600000) return Math.floor(diff/60000) + ' 分鐘前';
+  if (diff < 86400000) return Math.floor(diff/3600000) + ' 小時前';
+  const opts = { month:'numeric', day:'numeric' };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('zh-TW', opts);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function getVisible() {
+  let list = [...questions];
+  if (filterCat !== 'all') list = list.filter(q => q.cat === filterCat);
+  if (filterStatus !== 'all') list = list.filter(q => q.status === filterStatus);
+  if (filterBar !== 'all') list = list.filter(q => q.status === filterBar);
+  const sort = document.getElementById('sort-sel')?.value || 'new';
+  const order = { pending:0, learning:1, resolved:2 };
+  if (sort === 'new') list.sort((a,b) => b.ts - a.ts);
+  else if (sort === 'old') list.sort((a,b) => a.ts - b.ts);
+  else list.sort((a,b) => order[a.status]-order[b.status] || b.ts-a.ts);
+  return list;
+}
+
+function render() {
+  updateCounts();
+  const feed = document.getElementById('feed');
+  const list = getVisible();
+  if (!list.length) {
+    feed.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><h3>這裡還沒有問題</h3><p>點擊「＋ 新增問題」開始記錄你的第一個疑問</p></div>`;
+    return;
+  }
+  feed.innerHTML = list.map(cardHTML).join('');
+}
+
+function cardHTML(q) {
+  const repliesHTML = (q.replies||[]).map((r,i) => `
+    <div class="reply${r.isAI ? ' reply-ai' : ''}">
+      <div class="reply-author">${r.isAI ? '🤖 AI 結論' : '💡 筆記'}</div>
+      <div class="reply-text">${esc(r.text)}</div>
+      <button class="reply-del" title="刪除" onclick="deleteReply('${q.id}',${i})">✕</button>
+    </div>`).join('');
+
+  return `<div class="qcard" id="card-${q.id}">
+    <div class="qcard-top">
+      <div class="qcard-meta">
+        <span class="status-dot status-${q.status}">${STATUS_LABELS[q.status]}</span>
+        <span class="tag tag-${q.cat}">${CAT_ICONS[q.cat]} ${CAT_LABELS[q.cat]}</span>
+        <span class="card-date">${fmtDate(q.ts)}</span>
+      </div>
+      <div class="qcard-question">${esc(q.title)}</div>
+      ${q.desc ? `<div class="qcard-desc">${esc(q.desc).replace(/\n/g,'<br>')}</div>` : ''}
+    </div>
+    ${repliesHTML ? `<div class="replies">${repliesHTML}</div>` : ''}
+    <div class="reply-form" id="rf-${q.id}" hidden>
+      <textarea class="reply-input" id="ri-${q.id}" placeholder="在這裡記下筆記、解答或參考資料…"></textarea>
+      <div style="width:100%;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="toggleReplyForm('${q.id}')">取消</button>
+        <button class="btn btn-primary btn-sm" onclick="submitReply('${q.id}')">儲存筆記</button>
+      </div>
+    </div>
+    <div class="qcard-actions">
+      <button class="action-link ai-link" onclick="openChat('${q.id}')">🤖 AI 討論</button>
+      <button class="action-link accent" onclick="toggleReplyForm('${q.id}')">📝 加筆記</button>
+      <button class="action-link" onclick="cycleStatus('${q.id}')">🔄 改狀態</button>
+      <button class="action-link" style="margin-left:auto;color:var(--fg-muted)" onclick="deleteQ('${q.id}')">🗑 刪除</button>
+    </div>
+  </div>`;
+}
+
+function updateCounts() {
+  ['work','tech','life','other'].forEach(c => { const el = document.getElementById('cnt-'+c); if (el) el.textContent = questions.filter(q=>q.cat===c).length; });
+  ['pending','learning','resolved'].forEach(s => { const el = document.getElementById('cnt-'+s); if (el) el.textContent = questions.filter(q=>q.status===s).length; });
+  document.getElementById('cnt-all').textContent = questions.length;
+  const total = questions.length, res = questions.filter(q=>q.status==='resolved').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-resolved').textContent = res;
+  document.getElementById('stat-rate').textContent = total ? Math.round(res/total*100)+'%' : '0%';
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+function toggleForm() {
+  const p = document.getElementById('form-panel');
+  p.hidden = !p.hidden;
+  if (!p.hidden) document.getElementById('q-title').focus();
+}
+function submitQuestion() {
+  const title = document.getElementById('q-title').value.trim();
+  if (!title) { document.getElementById('q-title').focus(); return; }
+  questions.unshift({ id:uid(), ts:Date.now(), title, desc:document.getElementById('q-desc').value.trim(), cat:document.getElementById('q-cat').value, status:document.getElementById('q-status').value, replies:[] });
+  save();
+  document.getElementById('q-title').value = '';
+  document.getElementById('q-desc').value = '';
+  document.getElementById('form-panel').hidden = true;
+  render();
+}
+function toggleReplyForm(id) {
+  const rf = document.getElementById('rf-'+id);
+  rf.hidden = !rf.hidden;
+  if (!rf.hidden) document.getElementById('ri-'+id).focus();
+}
+function submitReply(id) {
+  const el = document.getElementById('ri-'+id), text = el.value.trim();
+  if (!text) return;
+  const q = questions.find(x=>x.id===id);
+  if (!q) return;
+  if (!q.replies) q.replies = [];
+  q.replies.push({ text, ts:Date.now() });
+  save(); render();
+}
+function deleteReply(id, idx) {
+  const q = questions.find(x=>x.id===id);
+  if (!q) return;
+  q.replies.splice(idx, 1);
+  save(); render();
+}
+function cycleStatus(id) {
+  const q = questions.find(x=>x.id===id);
+  if (!q) return;
+  const cycle = ['pending','learning','resolved'];
+  q.status = cycle[(cycle.indexOf(q.status)+1)%3];
+  save(); render();
+}
+function deleteQ(id) {
+  questions = questions.filter(x=>x.id!==id);
+  save(); render();
+  if (chatQid === id) closeChat();
+}
+function setFilter(val, btn) {
+  filterBar = val;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// ── Sidebar nav ───────────────────────────────────────────────────────────
+document.getElementById('cat-nav').addEventListener('click', e => {
+  const li = e.target.closest('[data-cat]'); if (!li) return; e.preventDefault();
+  filterCat = li.dataset.cat; filterStatus = 'all';
+  document.querySelectorAll('#cat-nav li, #status-nav li').forEach(x=>x.classList.remove('active'));
+  li.classList.add('active');
+  document.getElementById('view-title').textContent = { all:'全部問題', work:'工作/製程', tech:'技術/3C', life:'日常生活', other:'其他' }[filterCat] || '全部問題';
+  render();
+});
+document.getElementById('status-nav').addEventListener('click', e => {
+  const li = e.target.closest('[data-status]'); if (!li) return; e.preventDefault();
+  filterStatus = li.dataset.status; filterCat = 'all';
+  document.querySelectorAll('#cat-nav li, #status-nav li').forEach(x=>x.classList.remove('active'));
+  li.classList.add('active');
+  document.getElementById('view-title').textContent = { pending:'待解決的問題', learning:'學習中', resolved:'已解決的問題' }[filterStatus];
+  render();
+});
+
+// ── AI Chat ───────────────────────────────────────────────────────────────
+const GEMINI_KEY_STORAGE = 'gemini_api_key';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+
+let chatQid   = null;   // current question id
+let chatTurns = [];     // [{role,content}] conversation history
+let chatAbort = null;   // AbortController for current streaming call
+
+function getApiKey() { try { return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; } catch(e) { return ''; } }
+
+// Show/hide input area based on key presence
+function refreshChatAvail() {
+  const hasKey = !!getApiKey();
+  document.getElementById('chat-unavail').hidden = hasKey;
+  document.getElementById('chat-input-row').hidden = !hasKey;
+  document.getElementById('chat-hint').hidden = !hasKey;
+}
+refreshChatAvail();
+
+// ── Settings modal ────────────────────────────────────────────────────────
+function openSettings() {
+  const key = getApiKey();
+  document.getElementById('gemini-key-input').value = key ? '•'.repeat(Math.min(key.length, 20)) : '';
+  document.getElementById('settings-status').textContent = key ? '✓ 已設定 API Key' : '';
+  document.getElementById('settings-status').className = 'settings-status';
+  document.getElementById('settings-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('gemini-key-input').focus(), 80);
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function saveApiKey() {
+  const val = document.getElementById('gemini-key-input').value.trim();
+  const statusEl = document.getElementById('settings-status');
+  if (!val || val.startsWith('•')) {
+    statusEl.textContent = val.startsWith('•') ? '✓ 保留原有 Key' : '請輸入 API Key';
+    statusEl.className = 'settings-status' + (val.startsWith('•') ? '' : ' err');
+    if (val.startsWith('•')) setTimeout(closeSettings, 800);
+    return;
+  }
+  try { localStorage.setItem(GEMINI_KEY_STORAGE, val); } catch(e) {}
+  statusEl.textContent = '✓ 已儲存';
+  statusEl.className = 'settings-status';
+  refreshChatAvail();
+  setTimeout(closeSettings, 700);
+}
+document.getElementById('gemini-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveApiKey();
+  if (e.key === 'Escape') closeSettings();
+});
+document.getElementById('settings-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+});
+
+function openChat(qid) {
+  const q = questions.find(x => x.id === qid);
+  if (!q) return;
+  chatQid = qid;
+  chatTurns = [];
+  lastAiText = '';
+
+  document.getElementById('chat-q-title').textContent = q.title;
+  const msgs = document.getElementById('chat-msgs');
+  msgs.innerHTML = `<div class="chat-welcome">
+    <span class="wi">🤖</span>
+    <p>針對「<strong>${esc(q.title)}</strong>」，你可以問我任何問題。<br>有了滿意的答案後，點「✅ 存為結論」就會自動記錄進筆記。</p>
+  </div>`;
+  document.getElementById('chat-input').value = '';
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-drawer').classList.add('open');
+  document.getElementById('chat-input').focus();
+}
+
+function closeChat() {
+  if (chatAbort) { chatAbort.abort(); chatAbort = null; }
+  document.getElementById('chat-overlay').classList.remove('open');
+  document.getElementById('chat-drawer').classList.remove('open');
+  chatQid = null;
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// Auto-resize textarea
+document.getElementById('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+function appendMsg(role, text, msgId) {
+  const msgs = document.getElementById('chat-msgs');
+  // Remove welcome if present
+  const welcome = msgs.querySelector('.chat-welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = 'msg msg-' + role;
+  if (msgId) div.id = 'msg-' + msgId;
+  div.innerHTML = `<div class="msg-role">${role === 'user' ? '你' : 'AI 助手'}</div>
+    <div class="msg-bubble">${esc(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function setMsgText(div, text) {
+  const bubble = div.querySelector('.msg-bubble');
+  if (bubble) bubble.textContent = text;
+  const msgs = document.getElementById('chat-msgs');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addSaveButton(div, text) {
+  const existingActions = div.querySelector('.msg-actions');
+  if (existingActions) existingActions.remove();
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'save-btn';
+  saveBtn.innerHTML = '✅ 存為結論';
+  saveBtn.onclick = () => {
+    if (!chatQid) return;
+    const q = questions.find(x => x.id === chatQid);
+    if (!q) return;
+    if (!q.replies) q.replies = [];
+    q.replies.push({ text, ts: Date.now(), isAI: true });
+    save();
+    render();
+    saveBtn.className = 'save-btn saved';
+    saveBtn.innerHTML = '✓ 已儲存';
+  };
+  actions.appendChild(saveBtn);
+  div.appendChild(actions);
+}
+
+// ── Gemini streaming call ─────────────────────────────────────────────────
+async function callGemini(apiKey, systemPrompt, turns, onChunk, signal) {
+  // Convert turns: 'assistant' → 'model' for Gemini
+  const contents = turns.map(t => ({
+    role: t.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: t.content }]
+  }));
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+    })
+  });
+
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try { const j = await resp.json(); msg = j.error?.message || msg; } catch(e) {}
+    if (resp.status === 400) msg = 'API Key 無效，請重新設定。';
+    if (resp.status === 429) msg = '請求次數達上限，請稍後再試。';
+    throw new Error(msg);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '', fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const json = line.slice(6).trim();
+      if (!json || json === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(json);
+        const chunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (chunk) { fullText += chunk; onChunk(fullText); }
+      } catch(e) {}
+    }
+  }
+  return fullText;
+}
+
+async function sendChat() {
+  const apiKey = getApiKey();
+  if (!apiKey || !chatQid) return;
+  const input = document.getElementById('chat-input');
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  const q = questions.find(x => x.id === chatQid);
+  if (!q) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendMsg('user', userText);
+  chatTurns.push({ role: 'user', content: userText });
+
+  document.getElementById('chat-send').disabled = true;
+  document.getElementById('chat-stop').hidden = false;
+
+  const msgs = document.getElementById('chat-msgs');
+  const thinkEl = document.createElement('div');
+  thinkEl.className = 'msg-thinking';
+  thinkEl.textContent = '思考中…';
+  msgs.appendChild(thinkEl);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatAbort = new AbortController();
+
+  const systemPrompt = `你是一個實用的 AI 助手，協助使用者解答日常遇到的疑問。
+請用繁體中文回答。回答要清楚、具體、有條理。
+如果有解決方案，請明確說明步驟或結論。
+
+【目前討論的問題】
+標題：${q.title}${q.desc ? '\n說明：' + q.desc : ''}
+分類：${CAT_LABELS[q.cat]}
+
+已有的筆記：${(q.replies||[]).length > 0 ? '\n' + q.replies.map(r => '- ' + r.text).join('\n') : '（無）'}`;
+
+  let aiDiv = null, fullText = '';
+
+  try {
+    fullText = await callGemini(apiKey, systemPrompt, chatTurns, (text) => {
+      if (!aiDiv) { thinkEl.remove(); aiDiv = appendMsg('ai', text); }
+      else setMsgText(aiDiv, text);
+    }, chatAbort.signal);
+
+    thinkEl.remove();
+    if (!aiDiv) aiDiv = appendMsg('ai', fullText);
+    else setMsgText(aiDiv, fullText);
+
+    addSaveButton(aiDiv, fullText);
+    chatTurns.push({ role: 'assistant', content: fullText });
+    if (chatTurns.length > 10) chatTurns = chatTurns.slice(-10);
+
+  } catch(e) {
+    thinkEl.remove();
+    if (e.name === 'AbortError') {
+      if (aiDiv && fullText) {
+        setMsgText(aiDiv, fullText + '\n\n[已停止]');
+        addSaveButton(aiDiv, fullText);
+        chatTurns.push({ role: 'assistant', content: fullText });
+      }
+    } else {
+      const errEl = document.createElement('div');
+      errEl.className = 'msg-thinking';
+      errEl.textContent = `⚠️ ${e.message || '發生未知錯誤'}`;
+      msgs.appendChild(errEl);
+      // If API key error, open settings
+      if (e.message && e.message.includes('API Key')) setTimeout(openSettings, 500);
+    }
+  } finally {
+    chatAbort = null;
+    document.getElementById('chat-send').disabled = false;
+    document.getElementById('chat-stop').hidden = true;
+    msgs.scrollTop = msgs.scrollHeight;
+    document.getElementById('chat-input').focus();
+  }
+}
+
+function stopChat() {
+  if (chatAbort) { chatAbort.abort(); chatAbort = null; }
+}
+
+// ── Seed samples ──────────────────────────────────────────────────────────
+function seedSamples() {
+  if (questions.length > 0) return;
+  questions = [
+    { id:uid(), ts:Date.now()-86400000*2, title:'封裝模具脫模後為什麼偶爾會有 burr 殘留？', desc:'清潔後上脫模劑照正常流程，但某幾穴偶爾還是有毛邊，懷疑是 parting line 間隙問題，但還沒確認。', cat:'work', status:'learning', replies:[{ text:'可能跟 clamping force 設定有關，或者模具磨損後間隙變大。建議先量 PL gap，再比較良穴與不良穴的差異。', ts:Date.now()-86400000 }] },
+    { id:uid(), ts:Date.now()-86400000, title:'Home Assistant 的 automation 在手機背景時有時不觸發？', desc:'HA mobile app companion 的到家/離家 automation，有時 GPS 觸發會 delay 或完全沒反應。', cat:'tech', status:'pending', replies:[] },
+    { id:uid(), ts:Date.now()-3600000*3, title:'UniFi 交換器 PoE 預算如何計算？', desc:'', cat:'tech', status:'resolved', replies:[{ text:'每個 PoE 設備額定瓦數加總，建議留 30% 餘裕。AP 約 10-15W，NVR 攝影機端點按規格查。', ts:Date.now()-3600000 }] }
+  ];
+  save();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+load();
+seedSamples();
+render();
+</script>
