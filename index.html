@@ -1,4 +1,4 @@
-<meta name="app-version" content="2026-10-11-3">
+<meta name="app-version" content="2026-10-11-4">
 <!-- Firebase compat SDK (must be before <script> app code) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -761,6 +761,7 @@ textarea { min-height: 80px; }
     </div>
 
     <div class="settings-footer">
+      <span id="app-ver-label" style="margin-right:auto;font-size:13px;font-weight:600;color:var(--fg-2)"></span>
       <button class="btn btn-ghost btn-sm" onclick="closeSettings()">關閉</button>
     </div>
   </div>
@@ -1444,7 +1445,7 @@ initStorage();
   var tag = document.createElement('div');
   tag.textContent = 'v' + V;
   tag.style.cssText = 'position:fixed;left:8px;bottom:6px;font-size:10px;opacity:.45;z-index:5;pointer-events:none;font-family:sans-serif';
-  document.body.appendChild(tag);
+  document.body.appendChild(tag); var vl = document.getElementById('app-ver-label'); if (vl) vl.textContent = '\u7248\u672c v' + V;
   var shown = false;
   function banner(latest){
     if (shown) return; shown = true;
