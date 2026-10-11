@@ -1,4 +1,4 @@
-<meta name="app-version" content="2026-10-11-5">
+<meta name="app-version" content="2026-10-11-6">
 <!-- Firebase compat SDK (must be before <script> app code) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -686,7 +686,7 @@ textarea { min-height: 80px; }
 </div>
 
 <!-- ── AI Chat Drawer ─────────────────────────────────────────────────── -->
-<div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
+<div class="chat-overlay" id="chat-overlay" onclick="if (!chatAbort) closeChat()"></div>
 <div class="chat-drawer" id="chat-drawer">
   <div class="chat-header">
     <div class="chat-header-top">
@@ -1275,25 +1275,37 @@ async function callGemini(apiKey, systemPrompt, turns, onChunk, signal) {
     parts: [{ text: t.content }]
   }));
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-  const doFetch = (withThinking) => fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents,
-      generationConfig: Object.assign({ temperature: 0.7, maxOutputTokens: 8192 }, withThinking ? { thinkingConfig: { thinkingLevel: 'low' } } : {})
-    })
-  });
-  let resp = await doFetch(true);
-  if (resp.status === 400) resp = await doFetch(false);
+  const MODELS = [GEMINI_MODEL, 'gemini-2.5-flash'];
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  let resp = null;
+  for (const model of MODELS) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse&key=' + apiKey;
+    const useThinking = model.indexOf('gemini-3') === 0;
+    const doFetch = (withThinking) => fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: Object.assign({ temperature: 0.7, maxOutputTokens: 8192 }, withThinking ? { thinkingConfig: { thinkingLevel: 'low' } } : {})
+      })
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      resp = await doFetch(useThinking);
+      if (resp.status === 400 && useThinking) resp = await doFetch(false);
+      if (resp.status !== 503 && resp.status !== 500) break;
+      await sleep(1500);
+    }
+    if (resp.ok || [500, 503, 404, 429].indexOf(resp.status) < 0) break;
+  }
 
   if (!resp.ok) {
     let msg = `HTTP ${resp.status}`;
     try { const j = await resp.json(); msg = j.error?.message || msg; } catch(e) {}
     if (resp.status === 400) msg = 'API Key 無效，請重新設定。';
     if (resp.status === 429) msg = '請求次數達上限，請稍後再試。';
+    if (resp.status === 503 || resp.status === 500) msg = '模型目前使用量過高，已自動重試仍失敗，請稍後再試。';
     throw new Error(msg);
   }
 
