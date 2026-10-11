@@ -1113,7 +1113,7 @@ async function saveFirebaseConfig() {
   if (!raw) { statusEl.textContent = '請貼入 Firebase 設定 JSON'; statusEl.className = 'settings-status err'; return; }
 
   let cfg;
-  try { cfg = JSON.parse(raw); } catch(e) { statusEl.textContent = 'JSON 格式錯誤，請重新確認'; statusEl.className = 'settings-status err'; return; }
+  try { try { cfg = JSON.parse(raw); } catch(e) { cfg = new Function('"use strict";return (' + raw + ')')(); } if (typeof cfg !== 'object' || cfg === null) throw new Error(); } catch(e) { statusEl.textContent = 'JSON 格式錯誤，請重新確認'; statusEl.className = 'settings-status err'; return; }
   if (!cfg.projectId) { statusEl.textContent = '缺少 projectId，請確認設定'; statusEl.className = 'settings-status err'; return; }
 
   statusEl.textContent = '🔄 連線中…'; statusEl.className = 'settings-status';
