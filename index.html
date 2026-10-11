@@ -1,3 +1,4 @@
+<meta name="app-version" content="2026-10-11-3">
 <!-- Firebase compat SDK (must be before <script> app code) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1113,7 +1114,7 @@ async function saveFirebaseConfig() {
   if (!raw) { statusEl.textContent = '請貼入 Firebase 設定 JSON'; statusEl.className = 'settings-status err'; return; }
 
   let cfg;
-  try { try { cfg = JSON.parse(raw); } catch(e) { const a = raw.indexOf('{'), b = raw.lastIndexOf('}'); if (a < 0 || b < a) throw new Error(); const body = raw.slice(a, b + 1); try { cfg = JSON.parse(body); } catch(e2) { cfg = new Function('"use strict";return (' + body + ')')(); } } if (typeof cfg !== 'object' || cfg === null) throw new Error(); } catch(e) { statusEl.textContent = 'JSON 格式錯誤，請重新確認'; statusEl.className = 'settings-status err'; return; }
+  try { try { cfg = JSON.parse(raw); } catch(e) { const k = raw.indexOf('firebaseConfig'); const a = raw.indexOf('{', k >= 0 ? k : 0), b = raw.indexOf('}', a); if (a < 0 || b < a) throw new Error(); const body = raw.slice(a, b + 1); try { cfg = JSON.parse(body); } catch(e2) { cfg = new Function('"use strict";return (' + body + ')')(); } } if (typeof cfg !== 'object' || cfg === null) throw new Error(); } catch(e) { statusEl.textContent = 'JSON 格式錯誤，請重新確認'; statusEl.className = 'settings-status err'; return; }
   if (!cfg.projectId) { statusEl.textContent = '缺少 projectId，請確認設定'; statusEl.className = 'settings-status err'; return; }
 
   statusEl.textContent = '🔄 連線中…'; statusEl.className = 'settings-status';
@@ -1433,4 +1434,34 @@ function seedSamples() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 initStorage();
+</script>
+
+<script>
+/* auto-update check: compares loaded version with latest published version */
+(function(){
+  var V = (document.querySelector('meta[name="app-version"]')||{}).content;
+  if (!V) return;
+  var tag = document.createElement('div');
+  tag.textContent = 'v' + V;
+  tag.style.cssText = 'position:fixed;left:8px;bottom:6px;font-size:10px;opacity:.45;z-index:5;pointer-events:none;font-family:sans-serif';
+  document.body.appendChild(tag);
+  var shown = false;
+  function banner(latest){
+    if (shown) return; shown = true;
+    var b = document.createElement('div');
+    b.textContent = '\u6709\u65b0\u7248\u672c\uff0c\u9ede\u6b64\u66f4\u65b0';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#2f7ef5;color:#fff;text-align:center;padding:8px;font:600 13px sans-serif;cursor:pointer';
+    b.onclick = function(){ location.replace(location.pathname + '?v=' + encodeURIComponent(latest)); };
+    document.body.appendChild(b);
+  }
+  function check(){
+    fetch(location.pathname + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.text();}).then(function(t){
+      var m = t.match(/name="app-version" content="([^"]+)"/);
+      if (m && m[1] !== V) banner(m[1]);
+    }).catch(function(){});
+  }
+  check();
+  setInterval(check, 300000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); });
+})();
 </script>
