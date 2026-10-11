@@ -1,3 +1,7 @@
+<!-- Firebase compat SDK (must be before <script> app code) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <title>日常提問板</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 
@@ -155,7 +159,29 @@ body {
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; max-width: 800px; padding: 0 0 40px; }
 .main-header { padding: 28px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .main-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: -.5px; text-wrap: balance; }
-.main-sub { font-size: 13px; color: var(--fg-muted); margin-top: 3px; }
+.main-sub { font-size: 13px; color: var(--fg-muted); margin-top: 3px; display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+
+/* ─── Sync Status ────────────────────────────────────────────────────────── */
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-family: 'Sora', sans-serif;
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.sync-status:empty { display: none; }
+.sync-status[data-state="synced"]     { color: var(--resolved); border-color: var(--resolved); background: var(--resolved-bg); }
+.sync-status[data-state="error"]      { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
+.sync-status[data-state="connecting"] { color: var(--pending); border-color: var(--pending); background: var(--pending-bg); }
+.sync-status[data-state="local"]      { color: var(--fg-muted); }
 
 .btn { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: opacity .15s, transform .1s; display: inline-flex; align-items: center; gap: 6px; }
 .btn:active { transform: scale(.97); }
@@ -175,8 +201,8 @@ body {
 .form-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 
 label.field-label { font-size: 12px; font-weight: 600; font-family: 'Sora', sans-serif; color: var(--fg-2); letter-spacing: .3px; display: block; margin-bottom: 5px; }
-input[type="text"], textarea, select { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; font-family: 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; color: var(--fg); outline: none; transition: border-color .15s, box-shadow .15s; resize: none; }
-input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+input[type="text"], input[type="password"], textarea, select { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; font-family: 'Noto Sans TC', system-ui, sans-serif; font-size: 14px; color: var(--fg); outline: none; transition: border-color .15s, box-shadow .15s; resize: none; }
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
 textarea { min-height: 80px; }
 .field-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .field-row > * { flex: 1; min-width: 0; }
@@ -304,6 +330,8 @@ textarea { min-height: 80px; }
   gap: 12px;
   background: var(--ai-surface);
   scroll-behavior: smooth;
+  /* Ensure messages area takes remaining space correctly */
+  min-height: 0;
 }
 .chat-welcome {
   text-align: center;
@@ -350,12 +378,13 @@ textarea { min-height: 80px; }
 .save-btn.saved { background: var(--resolved); color: #fff; pointer-events: none; }
 
 .chat-footer {
-  padding: 12px 14px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 .chat-unavail { text-align: center; padding: 10px; font-size: 12px; color: var(--fg-muted); }
@@ -375,6 +404,8 @@ textarea { min-height: 80px; }
   font-family: 'Noto Sans TC', system-ui, sans-serif;
   outline: none;
   transition: border-color .15s;
+  /* Prevent zoom on iOS when font-size < 16px */
+  font-size: 16px;
 }
 .chat-input:focus { border-color: var(--ai-fg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-fg) 12%, transparent); }
 .chat-send-btn {
@@ -417,6 +448,7 @@ textarea { min-height: 80px; }
   backdrop-filter: blur(3px);
   align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 .settings-overlay.open { display: flex; }
 .settings-modal {
@@ -424,7 +456,9 @@ textarea { min-height: 80px; }
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-md);
-  width: min(420px, calc(100vw - 32px));
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -439,6 +473,34 @@ textarea { min-height: 80px; }
   align-items: center;
   gap: 8px;
 }
+
+/* Settings tabs */
+.settings-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin: -8px -24px 0;
+  padding: 0 24px;
+}
+.settings-tab {
+  font-family: 'Sora', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.settings-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.settings-tab:hover:not(.active) { color: var(--fg); }
+.settings-panel { display: none; flex-direction: column; gap: 14px; }
+.settings-panel.active { display: flex; }
+
 .settings-desc {
   font-size: 13px;
   color: var(--fg-2);
@@ -480,6 +542,18 @@ textarea { min-height: 80px; }
 }
 .chat-gear-btn:hover { background: rgba(0,0,0,.08); opacity: 1; }
 
+/* Firebase config textarea */
+.fb-json-area {
+  width: 100%;
+  min-height: 100px;
+  font-family: 'Sora', monospace, sans-serif;
+  font-size: 12px;
+  letter-spacing: .2px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.fb-action-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   body { flex-direction: column; }
@@ -489,8 +563,24 @@ textarea { min-height: 80px; }
   .sidebar-stats { padding: 10px 16px; }
   .main-header, .filter-bar, .feed { padding-left: 16px; padding-right: 16px; }
   .form-panel { margin-left: 16px; margin-right: 16px; }
-  .chat-drawer { width: 100vw; top: auto; height: 90dvh; transform: translateY(100%); border-left: none; border-top: 1px solid var(--border); border-radius: 16px 16px 0 0; }
+
+  /* Chat drawer: bottom sheet on mobile */
+  .chat-drawer {
+    width: 100vw;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90dvh;
+    transform: translateY(100%);
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    /* transition includes height for smooth keyboard adjustment */
+    transition: transform .25s cubic-bezier(.25,.46,.45,.94), height .15s ease;
+  }
   .chat-drawer.open { transform: translateY(0); }
+  .chat-footer { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -532,7 +622,7 @@ textarea { min-height: 80px; }
   <div class="main-header">
     <div>
       <div class="main-title" id="view-title">全部問題</div>
-      <div class="main-sub">記錄日常遇到的疑問，持續學習成長</div>
+      <div class="main-sub">記錄日常遇到的疑問，持續學習成長 <span class="sync-status" id="sync-status"></span></div>
     </div>
     <button class="btn btn-primary" onclick="toggleForm()">＋ 新增問題</button>
   </div>
@@ -622,22 +712,50 @@ textarea { min-height: 80px; }
 </div>
 
 <!-- ── Settings Modal ────────────────────────────────────────────────────── -->
-<div class="settings-overlay" id="settings-overlay" onclick="e=>e.target===this&&closeSettings()">
+<div class="settings-overlay" id="settings-overlay">
   <div class="settings-modal" onclick="event.stopPropagation()">
-    <h3>⚙️ Gemini API 設定</h3>
-    <p class="settings-desc">
-      前往 <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
-      取得免費 API Key，貼入下方即可啟用 AI 助手。<br>
-      Key 僅儲存在您的瀏覽器本機，不會上傳到任何伺服器。
-    </p>
-    <div>
-      <label class="field-label" for="gemini-key-input">Gemini API Key</label>
-      <div class="settings-key-row">
-        <input type="password" id="gemini-key-input" placeholder="AIza…" autocomplete="off" spellcheck="false">
-        <button class="btn btn-primary btn-sm" onclick="saveApiKey()">儲存</button>
-      </div>
+    <h3>⚙️ 設定</h3>
+
+    <div class="settings-tabs">
+      <button class="settings-tab active" id="stab-gemini" onclick="switchSettingsTab('gemini')">🤖 Gemini AI</button>
+      <button class="settings-tab" id="stab-firebase" onclick="switchSettingsTab('firebase')">☁️ 跨裝置同步</button>
     </div>
-    <div class="settings-status" id="settings-status"></div>
+
+    <!-- Gemini panel -->
+    <div class="settings-panel active" id="spanel-gemini">
+      <p class="settings-desc">
+        前往 <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>
+        取得免費 API Key，貼入下方即可啟用 AI 助手。<br>
+        Key 僅儲存在您的瀏覽器本機，不會上傳到任何伺服器。
+      </p>
+      <div>
+        <label class="field-label" for="gemini-key-input">Gemini API Key</label>
+        <div class="settings-key-row">
+          <input type="password" id="gemini-key-input" placeholder="AIza…" autocomplete="off" spellcheck="false">
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey()">儲存</button>
+        </div>
+      </div>
+      <div class="settings-status" id="settings-status"></div>
+    </div>
+
+    <!-- Firebase panel -->
+    <div class="settings-panel" id="spanel-firebase">
+      <p class="settings-desc">
+        設定 <a href="https://console.firebase.google.com/" target="_blank">Firebase Firestore</a>
+        後，所有裝置會即時同步問題記錄。<br>
+        從 Firebase Console → 專案設定 → 您的應用程式，複製 <strong>firebaseConfig</strong> 物件的 JSON 貼入下方。不設定則使用本機儲存。
+      </p>
+      <div>
+        <label class="field-label" for="fb-config-json">Firebase 設定 JSON</label>
+        <textarea class="fb-json-area" id="fb-config-json" placeholder='{"apiKey":"AIza...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}' spellcheck="false"></textarea>
+      </div>
+      <div class="fb-action-row">
+        <button class="btn btn-primary btn-sm" onclick="saveFirebaseConfig()">儲存並連線</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearFirebaseConfig()">清除（使用本機）</button>
+      </div>
+      <div class="settings-status" id="firebase-status"></div>
+    </div>
+
     <div class="settings-footer">
       <button class="btn btn-ghost btn-sm" onclick="closeSettings()">關閉</button>
     </div>
@@ -648,13 +766,90 @@ textarea { min-height: 80px; }
 // ── Data & State ──────────────────────────────────────────────────────────
 let questions = [];
 let filterCat = 'all', filterStatus = 'all', filterBar = 'all';
-const STORAGE_KEY = 'daily_qa_v1';
+const STORAGE_KEY  = 'daily_qa_v1';
+const FB_CONFIG_KEY = 'fb_config_v1';
 const CAT_LABELS = { work:'工作/製程', tech:'技術/3C', life:'日常生活', other:'其他' };
 const CAT_ICONS  = { work:'🏭', tech:'💻', life:'🌿', other:'🔖' };
 const STATUS_LABELS = { pending:'待解決', learning:'學習中', resolved:'已解決' };
 
+// Firebase state
+let useFirebase = false;
+let db = null;
+let fbUnsub = null;
+let lastAiText = '';
+
+// ── LocalStorage fallback ─────────────────────────────────────────────────
 function load() { try { const r = localStorage.getItem(STORAGE_KEY); if (r) questions = JSON.parse(r); } catch(e) { questions = []; } }
 function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(questions)); } catch(e) {} }
+
+// ── Firebase config ───────────────────────────────────────────────────────
+function getFbConfig() { try { const r = localStorage.getItem(FB_CONFIG_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
+function setFbConfig(cfg) { try { localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg)); } catch(e) {} }
+function clearFbConfigStorage() { try { localStorage.removeItem(FB_CONFIG_KEY); } catch(e) {} }
+
+// ── Sync status indicator ─────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const map = { connecting:'🔄 連線中', synced:'☁️ 已同步', error:'⚠️ 同步失敗', local:'' };
+  el.textContent = map[state] !== undefined ? map[state] : '';
+  el.dataset.state = state;
+}
+
+// ── Unified DB operations ─────────────────────────────────────────────────
+async function dbSet(q) {
+  if (useFirebase && db) {
+    try { await db.collection('questions').doc(q.id).set(q); } catch(e) { console.error('dbSet error:', e); }
+  } else { save(); }
+}
+async function dbDelete(id) {
+  if (useFirebase && db) {
+    try { await db.collection('questions').doc(id).delete(); } catch(e) { console.error('dbDelete error:', e); }
+  } else { save(); }
+}
+
+// ── Storage initialisation ────────────────────────────────────────────────
+async function initStorage() {
+  const cfg = getFbConfig();
+  if (!cfg || !cfg.projectId) {
+    // localStorage mode
+    load();
+    seedSamples();
+    render();
+    setSyncStatus('local');
+    return;
+  }
+
+  setSyncStatus('connecting');
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    db = firebase.firestore();
+    useFirebase = true;
+
+    fbUnsub = db.collection('questions').onSnapshot(snapshot => {
+      questions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setSyncStatus('synced');
+      render();
+    }, err => {
+      console.error('Firestore onSnapshot error:', err);
+      setSyncStatus('error');
+      // Fall back to localStorage gracefully
+      useFirebase = false;
+      if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+      load();
+      render();
+    });
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    useFirebase = false;
+    load();
+    seedSamples();
+    render();
+    setSyncStatus('error');
+  }
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────
 function uid()  { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(ts) {
@@ -743,48 +938,66 @@ function toggleForm() {
   p.hidden = !p.hidden;
   if (!p.hidden) document.getElementById('q-title').focus();
 }
-function submitQuestion() {
+
+async function submitQuestion() {
   const title = document.getElementById('q-title').value.trim();
   if (!title) { document.getElementById('q-title').focus(); return; }
-  questions.unshift({ id:uid(), ts:Date.now(), title, desc:document.getElementById('q-desc').value.trim(), cat:document.getElementById('q-cat').value, status:document.getElementById('q-status').value, replies:[] });
-  save();
+  const q = {
+    id: uid(), ts: Date.now(), title,
+    desc: document.getElementById('q-desc').value.trim(),
+    cat: document.getElementById('q-cat').value,
+    status: document.getElementById('q-status').value,
+    replies: []
+  };
+  questions.unshift(q);
+  render(); // immediate feedback
   document.getElementById('q-title').value = '';
   document.getElementById('q-desc').value = '';
   document.getElementById('form-panel').hidden = true;
-  render();
+  await dbSet(q);
 }
+
 function toggleReplyForm(id) {
   const rf = document.getElementById('rf-'+id);
   rf.hidden = !rf.hidden;
   if (!rf.hidden) document.getElementById('ri-'+id).focus();
 }
-function submitReply(id) {
+
+async function submitReply(id) {
   const el = document.getElementById('ri-'+id), text = el.value.trim();
   if (!text) return;
   const q = questions.find(x=>x.id===id);
   if (!q) return;
   if (!q.replies) q.replies = [];
   q.replies.push({ text, ts:Date.now() });
-  save(); render();
+  render();
+  await dbSet(q);
 }
-function deleteReply(id, idx) {
+
+async function deleteReply(id, idx) {
   const q = questions.find(x=>x.id===id);
   if (!q) return;
   q.replies.splice(idx, 1);
-  save(); render();
+  render();
+  await dbSet(q);
 }
-function cycleStatus(id) {
+
+async function cycleStatus(id) {
   const q = questions.find(x=>x.id===id);
   if (!q) return;
   const cycle = ['pending','learning','resolved'];
   q.status = cycle[(cycle.indexOf(q.status)+1)%3];
-  save(); render();
+  render();
+  await dbSet(q);
 }
-function deleteQ(id) {
+
+async function deleteQ(id) {
   questions = questions.filter(x=>x.id!==id);
-  save(); render();
+  render();
+  await dbDelete(id);
   if (chatQid === id) closeChat();
 }
+
 function setFilter(val, btn) {
   filterBar = val;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
@@ -814,13 +1027,12 @@ document.getElementById('status-nav').addEventListener('click', e => {
 const GEMINI_KEY_STORAGE = 'gemini_api_key';
 const GEMINI_MODEL = 'gemini-3.8-flash';
 
-let chatQid   = null;   // current question id
-let chatTurns = [];     // [{role,content}] conversation history
-let chatAbort = null;   // AbortController for current streaming call
+let chatQid   = null;
+let chatTurns = [];
+let chatAbort = null;
 
 function getApiKey() { try { return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; } catch(e) { return ''; } }
 
-// Show/hide input area based on key presence
 function refreshChatAvail() {
   const hasKey = !!getApiKey();
   document.getElementById('chat-unavail').hidden = hasKey;
@@ -830,17 +1042,44 @@ function refreshChatAvail() {
 refreshChatAvail();
 
 // ── Settings modal ────────────────────────────────────────────────────────
-function openSettings() {
+function switchSettingsTab(tab) {
+  ['gemini','firebase'].forEach(t => {
+    document.getElementById('stab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('spanel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+function openSettings(initialTab) {
+  // Load Gemini key display
   const key = getApiKey();
   document.getElementById('gemini-key-input').value = key ? '•'.repeat(Math.min(key.length, 20)) : '';
   document.getElementById('settings-status').textContent = key ? '✓ 已設定 API Key' : '';
   document.getElementById('settings-status').className = 'settings-status';
+
+  // Load Firebase config display
+  const fbCfg = getFbConfig();
+  document.getElementById('fb-config-json').value = fbCfg ? JSON.stringify(fbCfg, null, 2) : '';
+  const fbStatus = document.getElementById('firebase-status');
+  fbStatus.textContent = useFirebase ? '☁️ 目前已連線至 Firebase' : (fbCfg ? '⚠️ 設定已儲存但未連線' : '');
+  fbStatus.className = 'settings-status' + (useFirebase ? '' : fbCfg ? ' err' : '');
+
   document.getElementById('settings-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('gemini-key-input').focus(), 80);
+
+  // Switch to requested tab or default
+  if (initialTab) switchSettingsTab(initialTab);
+  else switchSettingsTab('gemini');
+
+  setTimeout(() => {
+    const activePanel = document.querySelector('.settings-panel.active');
+    const firstInput = activePanel?.querySelector('input, textarea');
+    if (firstInput) firstInput.focus();
+  }, 80);
 }
+
 function closeSettings() {
   document.getElementById('settings-overlay').classList.remove('open');
 }
+
 function saveApiKey() {
   const val = document.getElementById('gemini-key-input').value.trim();
   const statusEl = document.getElementById('settings-status');
@@ -856,6 +1095,7 @@ function saveApiKey() {
   refreshChatAvail();
   setTimeout(closeSettings, 700);
 }
+
 document.getElementById('gemini-key-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') saveApiKey();
   if (e.key === 'Escape') closeSettings();
@@ -863,6 +1103,74 @@ document.getElementById('gemini-key-input').addEventListener('keydown', e => {
 document.getElementById('settings-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('settings-overlay')) closeSettings();
 });
+
+async function saveFirebaseConfig() {
+  const raw = document.getElementById('fb-config-json').value.trim();
+  const statusEl = document.getElementById('firebase-status');
+  if (!raw) { statusEl.textContent = '請貼入 Firebase 設定 JSON'; statusEl.className = 'settings-status err'; return; }
+
+  let cfg;
+  try { cfg = JSON.parse(raw); } catch(e) { statusEl.textContent = 'JSON 格式錯誤，請重新確認'; statusEl.className = 'settings-status err'; return; }
+  if (!cfg.projectId) { statusEl.textContent = '缺少 projectId，請確認設定'; statusEl.className = 'settings-status err'; return; }
+
+  statusEl.textContent = '🔄 連線中…'; statusEl.className = 'settings-status';
+  setFbConfig(cfg);
+
+  // Teardown existing Firebase connection
+  if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+  useFirebase = false;
+  db = null;
+
+  try {
+    // Re-initialise Firebase (may already have an app)
+    if (firebase.apps.length) {
+      // Delete existing app and reinit
+      await firebase.app().delete();
+    }
+    firebase.initializeApp(cfg);
+    db = firebase.firestore();
+    useFirebase = true;
+
+    // Set up real-time listener
+    fbUnsub = db.collection('questions').onSnapshot(snapshot => {
+      questions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setSyncStatus('synced');
+      render();
+    }, err => {
+      console.error('Firestore error:', err);
+      setSyncStatus('error');
+      useFirebase = false;
+      load(); render();
+    });
+
+    statusEl.textContent = '✓ 已連線至 Firebase！關閉後資料將即時同步。';
+    statusEl.className = 'settings-status';
+    setSyncStatus('connecting');
+    // Snapshot will fire shortly and set to 'synced'
+
+  } catch(e) {
+    console.error('Firebase connect error:', e);
+    statusEl.textContent = '連線失敗：' + (e.message || '請確認設定正確');
+    statusEl.className = 'settings-status err';
+    clearFbConfigStorage();
+    setSyncStatus('error');
+    useFirebase = false;
+    // Fall back to local
+    load(); render();
+  }
+}
+
+function clearFirebaseConfig() {
+  if (fbUnsub) { fbUnsub(); fbUnsub = null; }
+  useFirebase = false; db = null;
+  clearFbConfigStorage();
+  const statusEl = document.getElementById('firebase-status');
+  statusEl.textContent = '已清除，使用本機儲存';
+  statusEl.className = 'settings-status';
+  document.getElementById('fb-config-json').value = '';
+  load(); render();
+  setSyncStatus('local');
+}
 
 function openChat(qid) {
   const q = questions.find(x => x.id === qid);
@@ -880,13 +1188,18 @@ function openChat(qid) {
   document.getElementById('chat-input').value = '';
   document.getElementById('chat-overlay').classList.add('open');
   document.getElementById('chat-drawer').classList.add('open');
-  document.getElementById('chat-input').focus();
+  // Small delay so drawer transition completes before focusing
+  setTimeout(() => document.getElementById('chat-input').focus(), 300);
 }
 
 function closeChat() {
   if (chatAbort) { chatAbort.abort(); chatAbort = null; }
   document.getElementById('chat-overlay').classList.remove('open');
-  document.getElementById('chat-drawer').classList.remove('open');
+  const drawer = document.getElementById('chat-drawer');
+  drawer.classList.remove('open');
+  // Reset height override (mobile keyboard fix)
+  drawer.style.height = '';
+  drawer.style.maxHeight = '';
   chatQid = null;
 }
 
@@ -902,7 +1215,6 @@ document.getElementById('chat-input').addEventListener('input', function() {
 
 function appendMsg(role, text, msgId) {
   const msgs = document.getElementById('chat-msgs');
-  // Remove welcome if present
   const welcome = msgs.querySelector('.chat-welcome');
   if (welcome) welcome.remove();
 
@@ -931,14 +1243,14 @@ function addSaveButton(div, text) {
   const saveBtn = document.createElement('button');
   saveBtn.className = 'save-btn';
   saveBtn.innerHTML = '✅ 存為結論';
-  saveBtn.onclick = () => {
+  saveBtn.onclick = async () => {
     if (!chatQid) return;
     const q = questions.find(x => x.id === chatQid);
     if (!q) return;
     if (!q.replies) q.replies = [];
     q.replies.push({ text, ts: Date.now(), isAI: true });
-    save();
     render();
+    await dbSet(q);
     saveBtn.className = 'save-btn saved';
     saveBtn.innerHTML = '✓ 已儲存';
   };
@@ -948,7 +1260,6 @@ function addSaveButton(div, text) {
 
 // ── Gemini streaming call ─────────────────────────────────────────────────
 async function callGemini(apiKey, systemPrompt, turns, onChunk, signal) {
-  // Convert turns: 'assistant' → 'model' for Gemini
   const contents = turns.map(t => ({
     role: t.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: t.content }]
@@ -1065,8 +1376,7 @@ async function sendChat() {
       errEl.className = 'msg-thinking';
       errEl.textContent = `⚠️ ${e.message || '發生未知錯誤'}`;
       msgs.appendChild(errEl);
-      // If API key error, open settings
-      if (e.message && e.message.includes('API Key')) setTimeout(openSettings, 500);
+      if (e.message && e.message.includes('API Key')) setTimeout(() => openSettings('gemini'), 500);
     }
   } finally {
     chatAbort = null;
@@ -1081,6 +1391,32 @@ function stopChat() {
   if (chatAbort) { chatAbort.abort(); chatAbort = null; }
 }
 
+// ── Mobile keyboard: visual viewport fix ──────────────────────────────────
+// When the virtual keyboard opens on mobile, adjust the chat drawer height
+// so the input box stays visible and isn't covered by the keyboard.
+(function setupKeyboardFix() {
+  if (!window.visualViewport) return;
+
+  const adjustDrawer = () => {
+    const drawer = document.getElementById('chat-drawer');
+    if (!drawer || !drawer.classList.contains('open')) return;
+    // Only apply on mobile (narrow viewport)
+    if (window.innerWidth > 600) return;
+
+    const vvh = window.visualViewport.height;
+    const offsetTop = window.visualViewport.offsetTop;
+    drawer.style.height = (vvh - offsetTop) + 'px';
+    drawer.style.maxHeight = (vvh - offsetTop) + 'px';
+
+    // Scroll messages to bottom so latest stays visible
+    const msgs = document.getElementById('chat-msgs');
+    if (msgs) requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+  };
+
+  window.visualViewport.addEventListener('resize', adjustDrawer);
+  window.visualViewport.addEventListener('scroll', adjustDrawer);
+})();
+
 // ── Seed samples ──────────────────────────────────────────────────────────
 function seedSamples() {
   if (questions.length > 0) return;
@@ -1093,7 +1429,5 @@ function seedSamples() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-load();
-seedSamples();
-render();
+initStorage();
 </script>
