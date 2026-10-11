@@ -1,4 +1,4 @@
-<meta name="app-version" content="2026-10-11-4">
+<meta name="app-version" content="2026-10-11-5">
 <!-- Firebase compat SDK (must be before <script> app code) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1208,8 +1208,13 @@ function closeChat() {
   chatQid = null;
 }
 
+window._lastCompEnd = 0;
+document.getElementById('chat-input').addEventListener('compositionend', function() { window._lastCompEnd = Date.now(); });
 document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.isComposing || e.keyCode === 229 || (Date.now() - window._lastCompEnd) < 50) return;
+    e.preventDefault(); sendChat();
+  }
 });
 
 // Auto-resize textarea
@@ -1271,16 +1276,18 @@ async function callGemini(apiKey, systemPrompt, turns, onChunk, signal) {
   }));
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-  const resp = await fetch(url, {
+  const doFetch = (withThinking) => fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal,
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+      generationConfig: Object.assign({ temperature: 0.7, maxOutputTokens: 8192 }, withThinking ? { thinkingConfig: { thinkingLevel: 'low' } } : {})
     })
   });
+  let resp = await doFetch(true);
+  if (resp.status === 400) resp = await doFetch(false);
 
   if (!resp.ok) {
     let msg = `HTTP ${resp.status}`;
@@ -1337,6 +1344,8 @@ async function sendChat() {
   const thinkEl = document.createElement('div');
   thinkEl.className = 'msg-thinking';
   thinkEl.textContent = '思考中…';
+  const _t0 = Date.now();
+  const _tm = setInterval(() => { if (thinkEl.isConnected) thinkEl.textContent = '思考中… ' + Math.round((Date.now() - _t0) / 1000) + ' 秒'; }, 1000);
   msgs.appendChild(thinkEl);
   msgs.scrollTop = msgs.scrollHeight;
 
@@ -1384,6 +1393,7 @@ async function sendChat() {
       if (e.message && e.message.includes('API Key')) setTimeout(() => openSettings('gemini'), 500);
     }
   } finally {
+    clearInterval(_tm);
     chatAbort = null;
     document.getElementById('chat-send').disabled = false;
     document.getElementById('chat-stop').hidden = true;
