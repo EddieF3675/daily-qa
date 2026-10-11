@@ -624,7 +624,10 @@ textarea { min-height: 80px; }
       <div class="main-title" id="view-title">全部問題</div>
       <div class="main-sub">記錄日常遇到的疑問，持續學習成長 <span class="sync-status" id="sync-status"></span></div>
     </div>
-    <button class="btn btn-primary" onclick="toggleForm()">＋ 新增問題</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-primary" onclick="toggleForm()">＋ 新增問題</button>
+      <button class="chat-gear-btn" onclick="openSettings()" title="設定" style="font-size:18px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;opacity:.8;">⚙️</button>
+    </div>
   </div>
 
   <div class="form-panel" id="form-panel" hidden>
